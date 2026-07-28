@@ -1,0 +1,5 @@
+{
+  "name": "clipboard-screenshot",
+  "version": "1.0.0",
+  "description": "Read screenshots from Mac clipboard"
+}

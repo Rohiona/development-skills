@@ -1,0 +1,67 @@
+{
+	"theme": "",
+	"title": "",
+	"version": "1.0.0",
+	"status": "discovery",
+	"entropy": "high",
+	"basic": {
+		"what": "",
+		"why": "",
+		"who": {
+			"stakeholders": [],
+			"users": [],
+			"owner": ""
+		},
+		"where": "",
+		"when": "",
+		"how": ""
+	},
+	"constraints": {
+		"technical": [],
+		"business": [],
+		"legal": []
+	},
+	"assumptions": {
+		"confirmed": [],
+		"unconfirmed": []
+	},
+	"scope": {
+		"in_scope": [],
+		"out_of_scope": [],
+		"deferred": []
+	},
+	"functional_requirements": {
+		"must_have": [],
+		"should_have": [],
+		"could_have": [],
+		"wont_have": []
+	},
+	"nfr": {
+		"performance": [],
+		"security": [],
+		"reliability": [],
+		"scalability": []
+	},
+	"dependencies": {
+		"systems": [],
+		"services": [],
+		"data": []
+	},
+	"acceptance_criteria": [],
+	"kpis": [],
+	"unknowns_deferred_to_design": [
+		{
+			"id": "UNK-000",
+			"question": "（記入例・使用時は削除）設計で決める論点。質問文だけのエントリは禁止（requirement-schema.md 参照）",
+			"criticality": "should",
+			"resolution_mode": "fact_finding",
+			"decision_condition": "何が揃えば決められるか＋材料の取り方",
+			"blocks": "implementation",
+			"options": []
+		}
+	],
+	"meta": {
+		"last_updated": "",
+		"confidence_level": "low"
+	}
+}

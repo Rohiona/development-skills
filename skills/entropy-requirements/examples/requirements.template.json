@@ -1,0 +1,84 @@
+{
+  "basic": {
+    "what": "",
+    "why": "",
+    "who": {
+      "stakeholders": [],
+      "users": [],
+      "owner": ""
+    },
+    "where": "",
+    "when": {
+      "deadline": "",
+      "milestones": []
+    },
+    "how": ""
+  },
+  "constraints": {
+    "technical": [],
+    "business": [],
+    "legal": [],
+    "resource": {
+      "budget": "",
+      "team": "",
+      "timeline": ""
+    }
+  },
+  "assumptions": {
+    "confirmed": [],
+    "unconfirmed": []
+  },
+  "scope": {
+    "in_scope": [],
+    "out_of_scope": [],
+    "deferred": []
+  },
+  "functional_requirements": {
+    "must_have": [],
+    "should_have": [],
+    "could_have": [],
+    "wont_have": []
+  },
+  "non_functional_requirements": {
+    "performance": [],
+    "security": [],
+    "usability": [],
+    "reliability": [],
+    "scalability": []
+  },
+  "risks": {
+    "identified": [],
+    "open_issues": []
+  },
+  "dependencies": {
+    "systems": [],
+    "services": [],
+    "data": [],
+    "decisions": []
+  },
+  "existing_code_analysis": {
+    "related_files": [],
+    "design_patterns": [],
+    "constraints_from_code": [],
+    "api_patterns": [],
+    "data_models": [],
+    "integration_points": [],
+    "business_logic": []
+  },
+  "unknowns": {
+    "clarifications_needed": [],
+    "decisions_pending": [],
+    "investigations_required": [],
+    "blocked_by": []
+  },
+  "success_criteria": {
+    "acceptance_criteria": [],
+    "kpis": []
+  },
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "",
+    "status": "discovery",
+    "confidence_level": "low"
+  }
+}

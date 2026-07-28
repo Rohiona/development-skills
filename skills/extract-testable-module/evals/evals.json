@@ -1,0 +1,97 @@
+{
+	"skill_name": "extract-testable-module",
+	"evals": [
+		{
+			"id": 0,
+			"eval_name": "apply-coupons (能動・業務ロジック分離)",
+			"prompt": "src/order.service.ts の OrderService に、クーポン適用メソッド applyCoupons(orderId, coupons) を実装してください。（仕様: 注文取得→クーポン検証[期限/最低額/併用可否]→割引計算[注文額で上限クリップ]→注文へ反映して保存）。既存スタイルとテスト慣習に合わせ、テストも書いてください。「切り出して」とは言わない能動シナリオ。",
+			"expected_output": "クーポン検証・割引計算などの純粋ロジックが OrderService から独立した関数/モジュールへ分離され、モック無しで単体テストされている。applyCoupons は 取得→計算→保存 の薄い調整役。時刻（期限判定）は隠れた入力にせず引数化されている。jest green、tsc OK。",
+			"files": ["fixtures/case1-apply-coupons"],
+			"expectations": [
+				"クーポン検証・割引計算のロジックが OrderService クラスの外（独立した関数または別モジュール）へ切り出されている",
+				"切り出された純粋ロジックが、OrderRepository のモック無しで直接呼ばれて単体テストされている",
+				"期限判定の現在時刻が隠れた入力（Date.now() 直読み）でなく引数として渡され、テストが決定的である",
+				"OrderService.applyCoupons 本体は 取得→委譲→保存 の薄い調整役に留まり、検証・計算の詳細を内包していない",
+				"npx jest が green（1件以上の test が PASS、失敗・エラー無し）",
+				"npx tsc --noEmit が型エラー無しで通る",
+				"既存のコードスタイル（タブ・セミコロンなし・シングルクオート）とテスト配置の慣習（co-location の *.test.ts）に従っている"
+			]
+		},
+		{
+			"id": 1,
+			"eval_name": "webhook-handler (能動・技術的関心の分離)",
+			"prompt": "src/webhook-handler.ts の handle を実装してください。（仕様: x-webhook-signature 取得→HMAC-SHA256 署名検証→JSON パース→eventId で重複排除→正規化して queue へ enqueue）。既存スタイルとテスト慣習に合わせ、テストも書いてください。能動シナリオ。",
+			"expected_output": "署名検証・正規化などの純粋ロジックが handle から独立した関数へ分離され、モック無しで単体テストされている。I/O（queue/dedup）は注入のまま薄く配線。jest green、tsc OK。",
+			"files": ["fixtures/case2-webhook-handler"],
+			"expectations": [
+				"署名検証ロジック（secret・body・signature から真偽を返す）が handle から独立した純粋関数へ切り出されている",
+				"切り出された純粋ロジック（署名検証、必要なら正規化）が、queue/dedup のモック無しで単体テストされている",
+				"WebhookHandler.handle 本体は、検証・正規化を呼び出して queue/dedup に配線する薄い調整役に留まっている",
+				"npx jest が green（1件以上の test が PASS、失敗・エラー無し）",
+				"npx tsc --noEmit が型エラー無しで通る",
+				"既存のコードスタイル・テスト配置の慣習に従っている"
+			]
+		},
+		{
+			"id": 2,
+			"eval_name": "prepare-workflow-data (受動・既存privateのExtract)",
+			"prompt": "src/workflow.service.ts の private な prepareWorkflowData に JSON パース・検証・変換が詰まっていて単体テストが書けない。挙動を変えずにテスト可能な形へ切り出してテストも書いてほしい。受動（明示依頼）シナリオ。",
+			"expected_output": "パース・検証・変換の純粋ロジックが独立関数として Extract され、モック無しで単体テスト済み。既存の createWorkflow/updateWorkflow の挙動は不変（既存テストが green のまま＝抽出前後で等価）。侵襲は最小。jest green、tsc OK。",
+			"files": ["fixtures/case3-prepare-workflow-data"],
+			"expectations": [
+				"prepareWorkflowData のパース・バリデーション・変換ロジックが、独立した関数（またはモジュール）として Extract されている（private に詰まったままでない）",
+				"Extract された純粋関数が、WorkflowRepository のモック無しで単体テストされている（正常系・異常系を含む）",
+				"元ファイルに prepareWorkflowData の定義の残骸（二重定義）が残っていない（完全移動）",
+				"createWorkflow / updateWorkflow の公開挙動が不変（既存の workflow.service.test.ts が変更なしで green のまま）",
+				"侵襲が最小（変更は workflow.service.ts ＋少数の新規ファイルに収まり、無関係な広範改変が無い）",
+				"npx jest が green（1件以上の test が PASS、失敗・エラー無し）",
+				"npx tsc --noEmit が型エラー無しで通る"
+			]
+		},
+		{
+			"id": 3,
+			"eval_name": "keep-cohesive (能動・据え置きが正解＝過剰抽出の抑制)",
+			"prompt": "src/article.service.ts の ArticleService.renameArticle / listSummaries を実装しました（純粋ロジック buildSlug は既に src/slug.ts に分離してテスト済み）。実装直後の自己点検として責務設計を評価し、必要な切り出しがあれば実施、不要なら据え置き判断を示してください。",
+			"expected_output": "testability_inventory の表が全単位（renameArticle / listSummaries / toSummary / buildSlug）を1行ずつ裁き、新規のモジュール分割は行われない（既に適切に分離済み）。据え置き行に deletion test と揮発/安定非混在の理由が明記される。既存テスト green のまま。",
+			"files": ["fixtures/case4-keep-cohesive"],
+			"expectations": [
+				"新しいモジュール（ファイル）分割やクラス再編を行っていない（過剰抽出していない。buildSlug は既に分離済みという文脈を認識している）",
+				"testability_inventory（単位ごとの棚卸し表）が出力され、ArticleService の各メソッド・private（toSummary 含む）を1件ずつ裁いている",
+				"据え置きの行に明示的な理由（deletion test で浅い／揮発と安定が混ざっていない／極小・呼び出し1箇所 等）が書かれている",
+				"既存テスト（slug.test.ts）が green のまま",
+				"npx tsc --noEmit が型エラー無しで通る"
+			]
+		},
+		{
+			"id": 4,
+			"eval_name": "entry-routing (受動・rate-of-change 層分離＋型安全な境界)",
+			"prompt": "src/notification-routing.ts の resolveNotificationRoute は、封筒からの channel 取り出しと channel→queue の振り分け判定が 1 関数に同居しています。今後、封筒のどのフィールドに channel が載るかは変わる見込みがあります。テスト可能な形に整理し、テストも書いてください。",
+			"expected_output": "揮発な取り出し（adapter）と安定な判定（policy）が分離され、合成で繋がれる。policy のテストは封筒を構築せずに書かれ、未知 channel の扱いは裸の as キャストでなく検証（type guard / union）で型安全に絞られる。既存テスト green のまま。",
+			"files": ["fixtures/case5-entry-routing"],
+			"expectations": [
+				"揮発な取り出し（envelope からの channel 抽出＝adapter）と安定な判定（channel→queue＝policy）が別関数に分離され、合成関数で繋がれている",
+				"policy（channel→queue）の単体テストが、envelope を一切構築せずに書かれている",
+				"未知の channel の扱いが型安全（裸の `as` キャストで型を宣言せず、type guard / parse で検証して絞る、または union 型で表現）",
+				"resolveNotificationRoute の公開挙動が不変（既存の notification-routing.test.ts が変更なしで green のまま）",
+				"npx jest が green（1件以上の test が PASS、失敗・エラー無し）",
+				"npx tsc --noEmit が型エラー無しで通る"
+			]
+		},
+		{
+			"id": 5,
+			"eval_name": "make-injectable (受動・依存注入化＋export-as-private の忌避)",
+			"prompt": "src/enrollment.service.ts の EnrollmentService.enroll を単体テスト可能にしてください（enroll の入出力・例外条件は変えない。コンストラクタへの依存注入化は可）。テストも書いてください。",
+			"expected_output": "planCode のパース・検証（純粋）が独立関数へ抽出されモック無しでテストされる。BillingHttpClient と process.env の直接参照が enroll 内部から排除されて注入可能になり、テストダブルで enroll 本体もテストされる。export-as-private（内部をそのまま export しただけ）では済ませない。jest green、tsc OK。",
+			"files": ["fixtures/case6-make-injectable"],
+			"expectations": [
+				"planCode のパース・検証（純粋ロジック）が独立関数へ抽出され、モック無しで単体テストされている（正常系・異常系）",
+				"BillingHttpClient の new と process.env の直接参照が enroll 内部から排除され、依存が注入（コンストラクタ or 引数）で差し替え可能になっている",
+				"注入された依存をテストダブルに差し替えた enroll 本体のテストがある（課金 API 成功・失敗の分岐）",
+				"内部ロジックをそのまま export しただけ（export-as-private）で済ませていない（抽出単位が単一関心になっている）",
+				"enroll の入出力・例外条件（AppError の条件とメッセージ）が不変",
+				"npx jest が green（1件以上の test が PASS、失敗・エラー無し）",
+				"npx tsc --noEmit が型エラー無しで通る"
+			]
+		}
+	]
+}

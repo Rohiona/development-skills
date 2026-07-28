@@ -1,0 +1,6 @@
+{
+	"last_ts": null,
+	"note": "初期状態。導入先プロジェクトで /extract-testable-retro を実行すると更新される。同梱 lens（GL1〜GL4・AC1）は作成元プロジェクトでの学習を汎化したもの。cases.jsonl はプロジェクトごとに育てる学習データ（初期状態では空）。",
+	"seeded_cases": 0,
+	"seeded_lenses": ["GL1", "GL2", "GL3", "GL4(provisional)", "AC1"]
+}

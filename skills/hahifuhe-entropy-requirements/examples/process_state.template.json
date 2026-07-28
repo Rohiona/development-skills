@@ -1,0 +1,32 @@
+{
+	"phase": "requirements",
+	"status": "in_progress",
+	"completed_at": "",
+	"entropy_progression": ["high"],
+	"cycles_completed": 0,
+	"unknowns_resolved": 0,
+	"unknowns_deferred_to_design": 0,
+	"unknowns": {
+		"blocked_by": [],
+		"clarifications_needed": [],
+		"decisions_pending": [],
+		"investigations_required": [
+			{
+				"id": "INV-001",
+				"question": "",
+				"criticality": "must",
+				"researchType": "internal|external|mixed",
+				"status": "pending|dispatched|resolved|expired|escalated",
+				"verdict_ref": "research/research.json#INV-001"
+			}
+		]
+	},
+	"feasibility_pending": 0,
+	"quality_check": {
+		"consistency": "warn",
+		"completeness": "warn",
+		"coherence": "warn",
+		"clarity": "warn"
+	},
+	"artifacts": ["requirements/requirements.json", "requirements/requirements.md"]
+}

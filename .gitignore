@@ -1,0 +1,23 @@
+# 依存物・キャッシュ
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Memory のデータ実体は絶対にコミットしない（機構のみを管理する）
+# 実データは ~/.claude-mem/（SQLite + ChromaDB）と ~/.claude/projects/*/memory/ に置かれる
+.claude-mem/
+*.sqlite
+*.sqlite3
+*.db
+chroma/
+memory-data/
+
+# 学習データ（プロジェクトごとに育てるもので、リポジトリには含めない）
+*.cases.jsonl
+cases.jsonl
+
+# ログ・一時ファイル
+*.log
+*.bak
+*.bak-*

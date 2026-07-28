@@ -1,0 +1,9 @@
+{
+	"name": "claude-session-groups",
+	"private": true,
+	"type": "module",
+	"description": "Claude デスクトップアプリのセッショングループ構造（dframe-store）のバックアップ/復元",
+	"dependencies": {
+		"classic-level": "^3.0.0"
+	}
+}

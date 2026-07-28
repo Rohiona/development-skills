@@ -1,0 +1,19 @@
+{
+  "process_id": "",
+  "requirement_doc_path": "./requirements.json",
+  "created_at": "",
+  "updated_at": "",
+  "current_phase": "code_analysis",
+  "cycle_count": 0,
+  "current_cycle": 0,
+  "entropy_level": "high",
+  "question_history": [],
+  "answer_history": [],
+  "convergence_status": {
+    "unknowns_empty": false,
+    "critical_unknowns_empty": false,
+    "must_have_complete": false,
+    "is_converged": false,
+    "convergence_note": ""
+  }
+}

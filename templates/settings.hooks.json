@@ -1,0 +1,79 @@
+{
+	"_comment": "~/.claude/settings.json の hooks キーへマージするテンプレート。不要な hook は行ごと削除してよい。",
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "Grep|Glob|Read",
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/serena-loader.sh" }]
+			},
+			{
+				"matcher": "Edit|Write|MultiEdit|NotebookEdit|mcp__plugin_serena_serena__.*|mcp__mcp-tsmorph-refactor__.*",
+				"hooks": [{ "type": "command", "command": "python3 ~/.claude/hooks/cursor-delegation-enforce.py" }]
+			},
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 ~/.claude/hooks/pr-push-guard.py",
+						"timeout": 10,
+						"statusMessage": "公開系操作（push/PR）の確認ゲート"
+					},
+					{ "type": "command", "command": "python3 ~/.claude/hooks/codex-wrapper-enforce.py" }
+				]
+			}
+		],
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit|MultiEdit",
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/biome-format-edited.sh" }]
+			}
+		],
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{ "type": "command", "command": "bash ~/.claude/hooks/compact-restore.sh" },
+					{ "type": "command", "command": "python3 ~/.claude/hooks/memory-recall-detect.py" },
+					{ "type": "command", "command": "python3 ~/.claude/hooks/context-weight-warn.py" }
+				]
+			}
+		],
+		"Stop": [
+			{
+				"hooks": [
+					{ "type": "command", "command": "python3 ~/.claude/hooks/memory-stop-record.py" },
+					{ "type": "command", "command": "python3 ~/.claude/hooks/extract-testable-module-gate.py" },
+					{ "type": "command", "command": "python3 ~/.claude/hooks/clear-advocacy-handoff-guard.py" }
+				]
+			}
+		],
+		"SessionEnd": [
+			{
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/handoff-dump.sh" }]
+			}
+		],
+		"SessionStart": [
+			{
+				"hooks": [
+					{ "type": "command", "command": "bash ~/.claude/hooks/handoff-restore.sh" },
+					{ "type": "command", "command": "bash ~/.claude/hooks/worktree-pin.sh" },
+					{ "type": "command", "command": "bash ~/.claude/hooks/worktree-autopush.sh" }
+				]
+			},
+			{
+				"matcher": "compact",
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/compact-restore.sh" }]
+			}
+		],
+		"PreCompact": [
+			{
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/precompact-dump.sh" }]
+			}
+		],
+		"PostCompact": [
+			{
+				"hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/compact-mark.sh" }]
+			}
+		]
+	}
+}

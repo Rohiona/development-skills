@@ -1,0 +1,55 @@
+{
+	"skill_name": "autonomous-dev",
+	"notes": "v3=SSoT 再編＋下流 Workflow 隔離。EVAL1-4 は下流（承認済み設計→autodev-downstream Workflow）の検証、EVAL5 は上流込みの一気通貫、EVAL6-7 は v3 で加わった再開耐性と収束ループの検証。メインループ専用スキルのためライブ試走を主とする。",
+	"evals": [
+		{
+			"id": 1,
+			"name": "downstream-happy-path-pure-util",
+			"prompt": "@yourorg/server-core に純粋関数 `maskUserId(userId: string): string` を追加して。先頭4文字と末尾4文字だけ残して間を同数の '*' で潰す。8文字以下はそのまま返す。ユニットテストも付けて。設計はこの説明で確定なので自走で実装→型/lint/テスト→draft PR まで。",
+			"expected_output": "設計確定済みなので下流のみ。autodev-downstream Workflow が起動し、implement→gate（緑）→review-all（GO）→audit pass で GO を返す。メイン文脈にレビュー所見全文が載らない（判定とレポートパスのみ）。draft PR。",
+			"files": []
+		},
+		{
+			"id": 2,
+			"name": "downstream-ambiguous-should-stop",
+			"prompt": "@yourorg/server-core に汎用リトライユーティリティ `withRetry(fn, options)` を追加して。テストも付けて自走でPRまで。",
+			"expected_output": "回数/バックオフ/対象エラー/タイムアウト未定義を implement ステージが検知し、Workflow が {status:'NEEDS_HUMAN', phase:'implement', items:[{category:'ambiguous',...}]} を返して終了。メインが bucket.sh escalate → AskUserQuestion で停止。",
+			"files": []
+		},
+		{
+			"id": 3,
+			"name": "downstream-impl-test-loop",
+			"prompt": "@yourorg/server-core に `parseDeliveryRatio(input: string): number` を追加して。'12.5%' を 0.125 で返す。'%'なし・前後空白・全角％許容。範囲外/数値化不可は Error。境界と異常系テストも。自走で実装→型/テスト→draft PR 直前まで。",
+			"expected_output": "完走。実装初版がテストで落ちれば Gate ループ（コード化された上限5・同一エラー検知）が fix agent で緑化。GO 返却。",
+			"files": []
+		},
+		{
+			"id": 4,
+			"name": "downstream-thick-impl-triggers-extraction",
+			"prompt": "@yourorg/server-core に `parseDeliveryTarget(raw: string): DeliveryTarget` を追加して。'all'/'tag:123,456'/'segment:vip' を構造化。未知接頭辞・空・不正IDは Error。検証・分解・正規化を実装しテストも。自走で実装→型/テスト→draft PR 直前まで。",
+			"expected_output": "関心混在のため Implement プロンプト内の extract-testable-module 規律が発火し、純粋サブパーサを最小侵襲で切り出しテスト緑化。extraction_report と result.json に切り出し判断が残る。",
+			"files": []
+		},
+		{
+			"id": 5,
+			"name": "full-sdlc-from-idea-with-upstream-gates",
+			"prompt": "プロジェクトに『配信スケジュールが営業時間内かを判定するユーティリティ』を追加したい。要件から自走で設計→実装→レビュー→draft PR まで進めて。",
+			"expected_output": "フルSDLC。①requirements: メインループが playbook 追従で対話（TZ/営業時間定義/祝日/境界の包含を AskUserQuestion バッチで）→ requirements.md＋requirements.json → ★承認（未承認では design に進まない）。②design: プランモード収束 → architecture.md＋context.json → ★承認。③autodev-downstream Workflow 起動（Cursor 経路の --force 明示許可を先に取得）→ GO。④reconcile ⑤draft PR。audit.sh pass。成果物は design_doc/{f}/ 配下（俺様規約）。",
+			"files": []
+		},
+		{
+			"id": 6,
+			"name": "needs-human-resume-with-cache",
+			"prompt": "（EVAL2 の続き）NEEDS_HUMAN で停止した run に対し、閣下の回答（リトライ3回固定・指数バックオフなし・対象は全 Error）を bucket.sh answer で書き戻し、同じ Workflow を resumeFromRunId ＋ attempt:1 で再投入する。",
+			"expected_output": "完了済みステージ（あれば）はキャッシュ再生され、implement だけが attempt タグ付きで再実行される。実装エージェントは escalations.jsonl の回答を前提として読み、DONE まで自走。gate→review→GO まで完走。二重実装・全ステージ再実行が起きないこと。",
+			"files": []
+		},
+		{
+			"id": 7,
+			"name": "review-nogo-convergence-full-rereview",
+			"prompt": "（ライブ or 注入）review-all が round1 で NO_GO（Major≥1）を返す状態を作り、収束ループの挙動を観測する。",
+			"expected_output": "Fix ステージが blockers と所見ファイル（stage-review/round1/）から修正 → Reverify で gate 再実行（回帰なし）→ review-all を round2 として『フル』再実行（部分再レビューしない）→ GO。上限3で NEEDS_HUMAN。state.json .review に各 round の verdict が記録される。",
+			"files": []
+		}
+	]
+}
