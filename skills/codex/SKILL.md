@@ -13,6 +13,18 @@ Codex CLI は **Claude とは別プロセスで会話履歴ゼロ** の別エー
 2. **session ID 明示**: どの subcommand 経由でも **必ず session ID を抽出してユーザーへ報告末尾に明示** する。ユーザーが Claude Code を介さず直接 `~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec resume <SESSION_ID> "..."` で同一文脈の議論に入るための導線なので、省略は不可。詳細は下記「セッション ID と継続議論」節。
 3. **`-C` は必ず「今いる作業ツリー」の絶対パスに固定**: `-C` には **必ず `$(git rev-parse --show-toplevel)` で解決した現在の worktree の絶対パスをコマンド置換でそのまま埋める**。「リポジトリルート」「repo の絶対パス」といった概念で本体リポジトリを手打ちしない。詳細は下記「`-C` は現在の worktree に固定する（最重要）」節。
 
+## 使われる Codex の版（wrapper が選ぶ）
+
+wrapper は、使う Codex を次の順に選ぶ。毎回 stderr に `codex-exec.sh: using <パス> (<版>)` を出し、末尾 meta にも `codex: <パス>` を残す。
+
+1. 環境変数 `CODEX_BIN`（手動で切り替えたいとき）
+2. デスクトップアプリ同梱の CLI（`/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex`）
+3. PATH 上の `codex`
+
+デスクトップアプリ同梱を優先するのは、アプリと同じ版にそろえてセッション記録（`~/.codex/sessions/`）を共用するため。PATH 上の CLI が古いと、新しいモデルを `not supported` で拒否されることがある（2026-10-05、CLI 0.157.0 で `gpt-6.1-sol` が使えず、アプリ同梱の 0.160.0 では動いた）。
+
+**同じセッションを2か所から同時に使えない**: デスクトップアプリで開いているセッションを `exec resume` すると `already has an active writer` で失敗する。アプリ側で閉じてから resume するか、新規 `exec` で始める。`codex queue --thread <ID> --message <本文>` で既存セッションにメッセージを積めるが、止まっているセッションでは自動で実行されなかった（2026-10-05 実測）。
+
 ## `-C` は現在の worktree に固定する（最重要）
 
 Codex は **ブランチを引数で受け取らない**。`-C` で渡したディレクトリに **チェックアウト中のブランチ + 未コミット差分** を、そのままレビュー / 編集の対象にする。つまり Codex が「どこを見て判断するか」は `-C` 一点で決まる。
@@ -140,7 +152,7 @@ Codex は Claude のメモリも CLAUDE.md も自動では読まない。下記 
 |---|---|---|
 | **inline 展開** | ルール・要件書・メモリが短い（～数千字）、確実に伝えたい | CLAUDE.md の要点・security.md 全文・要件書のサマリをプロンプト本文に直書き |
 | **`--add-dir` + 明示 Read 指示** | 対象が repo 外（`~/.claude/rules/` 等） or 長文ドキュメント複数 | `--add-dir ~/.claude/rules` + プロンプト内で「`~/.claude/rules/common/security.md` を最初に読め」と指示 |
-| **パス渡し（repo 内相対）** | 対象が `-C` で指定した repo の中にある | プロンプトに `design_doc/xxx/requirements.md を読んで` と書く。`--full-auto` or workspace-write なら読める |
+| **パス渡し（repo 内相対）** | 対象が `-C` で指定した repo の中にある | プロンプトに `design_doc/xxx/requirements.md を読んで` と書く。`-s workspace-write` なら読める |
 
 **重い重い時のコツ**:
 - **inline + パス渡しを併用**（二重化）すると、サンドボックス制限や Codex の判断ミスで片方がこけても生き残る。S3 の整合性レビューで実証済み
@@ -154,7 +166,7 @@ Codex は Claude のメモリも CLAUDE.md も自動では読まない。下記 
 確認を取るべき例外（これらに該当する時のみユーザーへ事前確認）:
 
 - **巨大 diff**（3000 行超 / 30 ファイル超 / マージコミット）: 分割方針の合意。read-only でも resource 浪費（数時間暴走・session ID 喪失）を防ぐため必須
-- **書き込みモード**（`-s workspace-write` / `--full-auto` / `-s danger-full-access`）: 変更範囲・影響対象の合意
+- **書き込みモード**（`-s workspace-write` / `-s danger-full-access`）: 変更範囲・影響対象の合意
 - **プロンプト内容が破壊的操作を指示**（ファイル削除、force push、`git reset --hard` 等）: 実行前にユーザーと意図確認
 - **外部サービスへの公開を含む**（PR 作成、Slack 投稿、外部 API 呼び出し等）
 
@@ -165,14 +177,18 @@ Codex は Claude のメモリも CLAUDE.md も自動では読まない。下記 
 | 用途 | 推奨モード | 理由 |
 |---|---|---|
 | 純粋静的レビュー（diff 読解のみ、テスト実行不要） | `-s read-only` + `-o <path>` | 副作用なし。`-o` のファイル書き込みは CLI ドライバ側なので read-only でも最終レポートは生成される |
-| レビュー中にテスト実行 / ビルド検証 / 追加ファイル生成を許したい | `codex exec --full-auto` | `-s read-only` だと Codex は「書けない / テスト走らせられない」と判断し**副次作業を自動フォールバックで諦める**（実測で NFR テスト実行が EPERM 失敗した事例あり） |
-| ファイル生成・修正 | `codex exec --full-auto` | `--full-auto` = workspace-write + 承認スキップ |
-| テスト実行・ネット必要 | `--full-auto` | ネットワーク + 書き込み可 |
+| レビュー中にテスト実行 / ビルド検証 / 追加ファイル生成を許したい | `codex exec -s workspace-write` | `-s read-only` だと Codex は「書けない / テスト走らせられない」と判断し**副次作業を自動フォールバックで諦める**（実測で NFR テスト実行が EPERM 失敗した事例あり） |
+| ファイル生成・修正 | `codex exec -s workspace-write` | `codex exec` は承認なし（`approval: never`）で動くので、旧 `--full-auto` と同じ意味になる |
+| テスト実行・ネット必要 | `-s workspace-write -c sandbox_workspace_write.network_access=true` | workspace-write は既定でネットワーク不可。必要なときだけ明示して許可する |
 | 危険操作（システム変更） | `-s danger-full-access` | 原則使わない。明示承認時のみ |
 
-**罠**: `-s read-only -o <path>` は結果レポートは書き出せるが、Codex プロセス自身は「書き込みブロックされた」と判断して**レポート 1 行目に「sandbox が read-only のため書けませんでした」という注記を残す**ことがある。副次検証（テスト実行等）まで求めるなら迷わず `--full-auto`。
+**罠**: `-s read-only -o <path>` は結果レポートは書き出せるが、Codex プロセス自身は「書き込みブロックされた」と判断して**レポート 1 行目に「sandbox が read-only のため書けませんでした」という注記を残す**ことがある。副次検証（テスト実行等）まで求めるなら迷わず `-s workspace-write`。
 
-`--full-auto` と `-s read-only` は併用しない（意図が矛盾）。用途が割れるなら `-s` を優先して使い分ける。
+`-s` は1つだけ指定する（`read-only` と `workspace-write` を同時に渡さない）。
+
+**`--full-auto` は廃止**: Codex CLI 0.160.0 では `codex exec --full-auto` が `unexpected argument` で失敗する（2026-10-05 実測）。代わりに `-s workspace-write` を使う。
+
+**`exec resume` には `-s` が無い**: 続きの依頼で書き込みを許すときは `-c sandbox_mode='"workspace-write"'` を渡す。
 
 ## 巨大 diff / 長時間実行への対処
 

@@ -192,7 +192,7 @@ EOF
 ~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s read-only -C "$(git rev-parse --show-toplevel)" -o /tmp/review.md "$(cat /tmp/codex-prompt.txt)"
 
 # パターン 3: repo 外のルールを読ませる
-~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec --full-auto \
+~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write \
   -C "$(git rev-parse --show-toplevel)" \
   --add-dir ~/.claude/rules \
   -o /tmp/review.md \

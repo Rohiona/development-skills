@@ -13,22 +13,24 @@ wrapper の形:
 第 1 引数は timeout 秒数（既定 1200 = 20 分、短縮 600、拡張 1800/3600）。残りは `codex` に
 そのまま渡る。wrapper が timeout 適用 / `</dev/null` 強制 / tee ログ保存 / session ID 抽出 を一括で行う。
 
+使う Codex は wrapper が「`CODEX_BIN` → デスクトップアプリ同梱の CLI → PATH 上の `codex`」の順に選ぶ（SKILL.md「使われる Codex の版」参照）。
+
 ## 基本コマンド
 
 ```bash
 # 基本形式（workspace-write）
 ~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write "プロンプト"
 
-# フルオートモード（推奨）
-~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec --full-auto "プロンプト"
+# 書き込みを許す（旧 --full-auto 相当。0.160.0 で --full-auto は廃止）
+~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write "プロンプト"
 
 # 作業ディレクトリ指定（レビュー/編集対象の repo・worktree は必ずこれで固定する）
 # Codex はブランチを引数で取らない。-C のディレクトリの「checkout 中ブランチ + 未コミット差分」をそのまま見る。
 # よって -C は必ず現在の作業ツリーをコマンド置換で渡す（概念上の「repo ルート」を手打ちしない）。worktree 取り違え防止。
-~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec --full-auto -C "$(git rev-parse --show-toplevel)" "プロンプト"
+~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write -C "$(git rev-parse --show-toplevel)" "プロンプト"
 
 # 最終メッセージをファイルに出力
-~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec --full-auto -o result.txt "プロンプト"
+~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write -o result.txt "プロンプト"
 ```
 
 ## サンドボックスモード
@@ -52,7 +54,7 @@ wrapper の形:
 ## ワークフロー
 
 1. ユーザーから Codex へのタスク依頼を受ける
-2. `~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec --full-auto "タスク内容"` を実行
+2. `~/.claude/skills/codex/scripts/codex-exec.sh 1200 exec -s workspace-write "タスク内容"` を実行
 3. 出力を確認し、必要に応じて結果をユーザーに報告
 4. Codex からの質問や確認事項があれば:
    - 自分で判断できる場合: 適切に対応
@@ -79,7 +81,7 @@ wrapper が自動でやること（手で書かなくてよい）:
 - Git 未管理ディレクトリでは `--skip-git-repo-check` を追加（wrapper の引数として渡す）
 - 複数ディレクトリへの書き込み・読み取りが必要な場合は `--add-dir` を使用
 - `-o <path>` は **Codex が最終メッセージを正常に出したときだけ書き出される**。タイムアウト（exit 124）や異常終了では空のまま or 未生成（tee ログで回収）
-- `-s read-only` でも `-o` 書き込み自体は CLI ドライバ側なので成立するが、Codex プロセス自身は「書けない / テスト実行できない」と判断し、**副次作業を自動で諦める**（テスト走らせたいなら `--full-auto` を選ぶ）
+- `-s read-only` でも `-o` 書き込み自体は CLI ドライバ側なので成立するが、Codex プロセス自身は「書けない / テスト実行できない」と判断し、**副次作業を自動で諦める**（テスト走らせたいなら `-s workspace-write` を選ぶ）
 - 巨大 diff（3000 行超 or 30 ファイル超、マージコミット含む）はそのまま投げず、Claude 側で `git show --stat` で俯瞰して絞り込みをかけてから渡す
 
 ## 推奨の呼び出し雛形

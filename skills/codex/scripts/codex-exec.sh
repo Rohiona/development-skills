@@ -7,6 +7,7 @@
 #   - </dev/null で stdin を強制クローズ (Codex の固まり防止)
 #   - session ID をログから抽出して末尾に明示
 #   - codex の exit code を保持
+#   - 使う Codex を選ぶ（CODEX_BIN → デスクトップアプリ同梱 → PATH 上の codex）
 #
 # Usage:
 #   codex-exec.sh <timeout_sec> <codex_subcommand> [args...]
@@ -34,7 +35,21 @@ fi
 
 LOG="/tmp/codex-$(date +%s)-$$.log"
 
-timeout "$TIMEOUT_SEC" codex "$@" </dev/null 2>&1 | tee "$LOG"
+# 使う Codex を選ぶ:
+#   1. 環境変数 CODEX_BIN
+#   2. デスクトップアプリ同梱の CLI（アプリと同じ版にそろえ、セッション記録を共用するため）
+#   3. PATH 上の codex
+APP_CODEX="/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex"
+if [ -n "${CODEX_BIN:-}" ]; then
+	CODEX="$CODEX_BIN"
+elif [ -x "$APP_CODEX" ]; then
+	CODEX="$APP_CODEX"
+else
+	CODEX="codex"
+fi
+echo "codex-exec.sh: using $CODEX ($("$CODEX" --version 2>/dev/null | head -1))" >&2
+
+timeout "$TIMEOUT_SEC" "$CODEX" "$@" </dev/null 2>&1 | tee "$LOG"
 EXIT="${PIPESTATUS[0]}"
 
 SESSION_ID="$(grep -m1 -oE 'session id: [0-9a-f-]{36}' "$LOG" | awk '{print $3}')"
@@ -43,6 +58,7 @@ echo
 echo "=== codex-exec.sh meta ==="
 echo "exit: $EXIT"
 echo "log: $LOG"
+echo "codex: $CODEX"
 if [ -n "$SESSION_ID" ]; then
 	echo "session_id: $SESSION_ID"
 else
